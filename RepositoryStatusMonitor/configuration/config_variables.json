@@ -1,0 +1,36 @@
+{
+    "lambda_timeout": "300",
+    "namespace": "RepositoryStatusMonitor",
+    "user_agent_header": "RepositoryStatusMonitor",
+    "dashboard_name_prefix": "repository-status-monitor",
+    "owner": "",
+    "repo_names": "",
+    "get_docker": "",
+    "github_fields_unpaginated": {
+        "GitHub Stars": "stargazers_count",
+        "Forks": "forks_count",
+        "Open Issues": "open_issues_count",
+        "Watchers": "subscribers_count",
+        "Latest GitHub Release": "releases/latest/tag_name",
+        "Latest Release Asset Download Count": "releases/latest/assets",
+        "GitHub Health Percentage": "community/profile/health_percentage",
+        "Top Referrers Over 14 Days": "traffic/popular/referrers/",
+        "Unique Clones Over 14 Days": "traffic/clones/uniques",
+        "Unique Views Over 14 Days": "traffic/views/uniques",
+        "Language Breakdown": "languages/",
+        "Longest Inactive Issue": "issues?sort=created&direction=asc/0*title",
+        "Issue Inactive Since": "issues?sort=created&direction=asc/0*updated_at",
+        "Longest Inactive PR": "pulls?sort=updated/0*title",
+        "PR Inactive Since": "pulls?sort=updated/0*updated_at"
+    },
+    "github_fields_paginated": {
+        "Open Pull Requests": "pulls",
+        "Contributors": "contributors"
+    },
+    "docker_fields": {
+        "Docker Pull Count": "pull_count",
+        "Latest Docker Release": "tags/results*0*name",
+        "Image Size (in mb)": "tags/results*0*full_size",
+        "CPU Architecture": "tags/results*0*images*0*architecture"
+    }
+}
