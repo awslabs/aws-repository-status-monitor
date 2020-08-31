@@ -182,7 +182,13 @@ def run_command(command: str, capture_output: bool, print_command=True,
 
     completed_process = subprocess.run(command.split(' '), capture_output=capture_output)
     if completed_process.returncode != 0:
-        print(completed_process.stderr.decode('utf-8'))
+        try:
+            if not print_command:
+                print("'" + command + "' failed. Error:")
+            print(completed_process.stderr.decode('utf-8'))
+        except AttributeError:
+            print('The error message could not be decoded')
+
         print_red('Could not complete task successfully. Terminating launch.')
         sys.exit()
 
@@ -293,8 +299,9 @@ def verify_context_variables(variables: dict, context_variables: list, non_empty
             print("There is no default value for", param_name + '.')
             approval = "n"
 
-        while not approval or approval != 'y' or approval != 'n':
+        while not approval or not (approval == 'y' or approval == 'n'):
             print_yellow("You must choose whether or not to approve the value. Type 'y' for approval, 'n' otherwise.")
+            print_red("approval: " + approval)
             approval = input_wrapper()
 
         if approval == 'n':
@@ -307,7 +314,7 @@ def verify_context_variables(variables: dict, context_variables: list, non_empty
             new_value = input_wrapper()
 
             if param_name in non_empty_context_vars:
-                while new_value == None or new_value == "":
+                while not new_value:
                     print_yellow('You must input a new value for ' + param_name + '.')
                     new_value = input_wrapper()
 

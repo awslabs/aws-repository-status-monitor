@@ -13,6 +13,7 @@ from aws_cdk import (
 
 from lambda_dir import http_handler as hh
 
+
 class RepositoryStatusMonitorStack(core.Stack):
     """
     A class used to represent an AWS CloudFormation stack.
@@ -53,6 +54,10 @@ class RepositoryStatusMonitorStack(core.Stack):
         """
         super().__init__(scope, id, **kwargs)
         metric_handler_dict, webhook_creator_dict = self.handle_parameters()
+        # timeout used for lambda and sqs, in seconds
+        lambda_timeout = 300
+        if self.node.try_get_context('lambda_timeout'):
+            lambda_timeout = int(self.node.try_get_context('lambda_timeout'))
 
         dead_letter_queue = sqs.Queue(
             self, 'DeadLetterQueue',
@@ -61,15 +66,16 @@ class RepositoryStatusMonitorStack(core.Stack):
         webhook_queue = sqs.Queue(
             self, 'WebhookQueue',
             queue_name='WebhookQueue',
+            visibility_timeout=lambda_timeout,
             dead_letter_queue=sqs.DeadLetterQueue(
-                max_receive_count=3, 
+                max_receive_count=3,
                 queue=dead_letter_queue)
         )
         metric_handler_dict['queue_url'] = webhook_queue.queue_url
 
         metric_handler_management_role = self.create_lambda_role_and_policy(
-            'MetricHandlerManagementRole', 
-            [   
+            'MetricHandlerManagementRole',
+            [
                 'cloudwatch:GetDashboard',
                 'cloudwatch:GetMetricData',
                 'cloudwatch:ListDashboards',
@@ -81,7 +87,7 @@ class RepositoryStatusMonitorStack(core.Stack):
                 'secretsmanager:GetSecretValue'
             ]
         )
-        metric_handler_timeout = int(self.node.try_get_context('lambda_timeout')) if self.node.try_get_context('lambda_timeout') else 300
+        metric_handler_timeout = lambda_timeout
         metric_handler_function = _lambda.Function(
             self, 'MetricsHandler',
             function_name='MetricsHandler',
@@ -101,8 +107,8 @@ class RepositoryStatusMonitorStack(core.Stack):
         apigw_webhook_url = self.create_and_integrate_apigw(webhook_queue, metric_handler_dict['dashboard_name_prefix'])
         webhook_creator_dict['apigw_endpoint'] = apigw_webhook_url
 
-        webhook_role = self.create_lambda_role_and_policy('WebhookCreatorRole',['secretsmanager:GetSecretValue'])
-        webhook_function = _lambda.Function(
+        webhook_role = self.create_lambda_role_and_policy('WebhookCreatorRole', ['secretsmanager:GetSecretValue'])
+        _lambda.Function(
             self, 'WebhookCreator',
             function_name='WebhookCreator',
             runtime=_lambda.Runtime.PYTHON_3_7,
@@ -144,57 +150,59 @@ class RepositoryStatusMonitorStack(core.Stack):
         :type lambda_function: aws_cdk.aws_lambda.Function
         """
         hourly_metric_retrieval_rule = events.Rule(
-                self, 'Rule',
-                rule_name='HourlyMetricRetrieval',
-                enabled=True,
-                schedule=events.Schedule.expression('rate(1 hour)')
-            )
+            self, 'Rule',
+            rule_name='HourlyMetricRetrieval',
+            enabled=True,
+            schedule=events.Schedule.expression('rate(1 hour)')
+        )
         hourly_metric_retrieval_rule.add_target(targets.LambdaFunction(lambda_function))
 
-
-    def handle_parameters(self) -> tuple:   
+    def handle_parameters(self) -> tuple:
         """Retrieves all context variables, checks for valid input, performs all necessary processing, and returns a dictionary of the processed variables
 
         :returns: a tuple containing two dictionaries, each containing all the processed context variables for each Lambda function
         :rtype: tuple
-        """ 
+        """
         repo_names_unvalidated = self.node.try_get_context('repo_names')
         docker_bool = self.node.try_get_context('get_docker')
         dashboard_name_prefix = self.node.try_get_context('dashboard_name_prefix')
         owner = self.node.try_get_context('owner')
-        github_fields_paginated = self.node.try_get_context('github_fields_paginated') if self.node.try_get_context('github_fields_paginated') is not None else ""
-        github_fields_unpaginated = self.node.try_get_context('github_fields_unpaginated') if self.node.try_get_context('github_fields_unpaginated') is not None else ""
-        docker_fields = self.node.try_get_context('docker_fields') if self.node.try_get_context('docker_fields') is not None else ""
+        github_fields_paginated = self.node.try_get_context('github_fields_paginated') if self.node.try_get_context(
+            'github_fields_paginated') is not None else ""
+        github_fields_unpaginated = self.node.try_get_context('github_fields_unpaginated') if self.node.try_get_context(
+            'github_fields_unpaginated') is not None else ""
+        docker_fields = self.node.try_get_context('docker_fields') if self.node.try_get_context(
+            'docker_fields') is not None else ""
         namespace = self.node.try_get_context('namespace')
         user_agent_header = self.node.try_get_context('user_agent_header')
         widgets = self.node.try_get_context('widgets') if self.node.try_get_context('widgets') is not None else ""
         default_metric_widget_name = self.node.try_get_context('default_metric_widget_name')
         default_text_widget_name = self.node.try_get_context('default_text_widget_name')
 
-        if self.node.try_get_context('github_token') is None or self.node.try_get_context('github_token') == "":
+        if not self.node.try_get_context('github_token'):
             raise ValueError('Need to specify GitHub token.')
-        if repo_names_unvalidated is None or repo_names_unvalidated == "":
+        if not repo_names_unvalidated:
             raise ValueError('Need to specify repository names.')
-        if dashboard_name_prefix is None or dashboard_name_prefix == "":
+        if not dashboard_name_prefix:
             raise ValueError('Need to specify prefix for dashboard names.')
-        if docker_bool is None or docker_bool == "":
+        if not docker_bool:
             raise ValueError('Need to specify whether to include docker metrics.')
         if owner is None:
             raise ValueError('Need to specify GitHub owner.')
-        if namespace is None or namespace == "":
+        if not namespace:
             raise ValueError('Need to specify namespace for CloudWatch metrics.')
-        if user_agent_header is None or user_agent_header == "":
+        if not user_agent_header:
             raise ValueError('Need to specify User-Agent header for GitHub requests.')
-        if default_metric_widget_name is None or default_metric_widget_name == "":
+        if not default_metric_widget_name:
             raise ValueError('Need to specify default metric widget name.')
-        if default_text_widget_name is None or default_text_widget_name == "":
+        if not default_text_widget_name:
             raise ValueError('Need to specify default text widget name.')
 
         repo_names = self.validate_repo_names(repo_names_unvalidated, owner, user_agent_header)
 
         metric_handler_dict = {
             'repo_names': repo_names,
-            'docker_bool': docker_bool, 
+            'docker_bool': docker_bool,
             'dashboard_name_prefix': dashboard_name_prefix,
             'github_fields_unpaginated': github_fields_unpaginated,
             'github_fields_paginated': github_fields_paginated,
@@ -208,13 +216,12 @@ class RepositoryStatusMonitorStack(core.Stack):
         }
 
         webhook_creator_dict = {
-            'repo_names': repo_names, 
+            'repo_names': repo_names,
             'owner': owner,
             'user_agent_header': user_agent_header
         }
 
         return metric_handler_dict, webhook_creator_dict
-        
 
     def validate_repo_names(self, repo_names: str, owner: str, user_agent_header: str) -> str:
         """Retrieves the list of GitHub repositories to which the user has access and validates that all repositories specified for the dashboard exist in that list
@@ -227,7 +234,7 @@ class RepositoryStatusMonitorStack(core.Stack):
         :type user_agent_header: str
         :returns: the repository names that exist for the user in GitHub
         :rtype: str
-        """ 
+        """
         headers = {'Authorization': 'token ' + self.node.try_get_context('github_token'),
                    'Accept': 'application/vnd.github.nebula-preview+json',
                    'User-Agent': user_agent_header}
@@ -260,7 +267,6 @@ class RepositoryStatusMonitorStack(core.Stack):
 
         return ','.join(valid_names)
 
-
     def create_and_integrate_apigw(self, queue: sqs.Queue, dashboard_name_prefix: str) -> str:
         """Creates API Gateway and integrates with SQS queue
 
@@ -270,7 +276,7 @@ class RepositoryStatusMonitorStack(core.Stack):
         :type dashboard_name_prefix: str
         :returns: the url that the webhooks will post to
         :rtype: str
-        """ 
+        """
         webhook_apigw_role = iam.Role(
             self,
             'WebhookAPIRole',

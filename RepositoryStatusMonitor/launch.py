@@ -2,7 +2,7 @@
 
 from colorama import init as colorama_init
 
-import launch_functions as lf
+import launch_functions.launch_functions as lf
 
 colorama_init()
 
