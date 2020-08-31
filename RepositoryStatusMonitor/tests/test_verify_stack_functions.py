@@ -4,7 +4,7 @@ import pytest
 from aws_cdk import core
 from unittest.mock import Mock, patch
 
-from respository_status_monitor_stack import RepositoryStatusMonitorStack
+from repository_status_monitor_stack import RepositoryStatusMonitorStack
 
 def set_context(github: str) -> dict:
     return {

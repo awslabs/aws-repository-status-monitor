@@ -66,7 +66,7 @@ class RepositoryStatusMonitorStack(core.Stack):
         webhook_queue = sqs.Queue(
             self, 'WebhookQueue',
             queue_name='WebhookQueue',
-            visibility_timeout=lambda_timeout,
+            visibility_timeout=core.Duration.seconds(lambda_timeout),
             dead_letter_queue=sqs.DeadLetterQueue(
                 max_receive_count=3,
                 queue=dead_letter_queue)

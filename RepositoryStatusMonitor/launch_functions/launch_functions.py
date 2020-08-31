@@ -187,9 +187,9 @@ def run_command(command: str, capture_output: bool, print_command=True,
                 print("'" + command + "' failed. Error:")
             print(completed_process.stderr.decode('utf-8'))
         except AttributeError:
-            print('The error message could not be decoded')
+            print_red('The error message could not be decoded')
 
-        print_red('Could not complete task successfully. Terminating launch.')
+        print_red('\nCould not complete task successfully. Terminating launch.')
         sys.exit()
 
     if print_success:
@@ -301,7 +301,6 @@ def verify_context_variables(variables: dict, context_variables: list, non_empty
 
         while not approval or not (approval == 'y' or approval == 'n'):
             print_yellow("You must choose whether or not to approve the value. Type 'y' for approval, 'n' otherwise.")
-            print_red("approval: " + approval)
             approval = input_wrapper()
 
         if approval == 'n':

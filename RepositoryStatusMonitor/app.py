@@ -4,7 +4,7 @@ import json
 
 from aws_cdk import core
 
-from respository_status_monitor_stack import RepositoryStatusMonitorStack
+from repository_status_monitor_stack import RepositoryStatusMonitorStack
 
 app = core.App()
 

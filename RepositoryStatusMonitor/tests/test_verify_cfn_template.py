@@ -5,7 +5,7 @@ import subprocess
 import pytest
 from aws_cdk import core
 
-from respository_status_monitor_stack import RepositoryStatusMonitorStack
+from repository_status_monitor_stack import RepositoryStatusMonitorStack
 
 
 def retrieve_template(github):
