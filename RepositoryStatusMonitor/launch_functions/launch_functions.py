@@ -82,22 +82,22 @@ def check_interactive() -> bool:
 
 
 def get_context_variables(context_vars: list) -> dict:
-    """Retrieves the context variables from the `configuration/config_variables.json` file
+    """Retrieves the context variables from the `configuration/context_variables.json` file
 
     :param context_vars: a list of all the context variable names
     :type context_vars: list
     :returns: the dictionary containing the entire cdk.json file and the dictionary containing just the context variables
     :rtype: dict
     """
-    with open('configuration/config_variables.json') as json_file:
+    with open('configuration/context_variables.json') as json_file:
         variables = json.load(json_file)
 
     if not isinstance(variables, dict):
-        raise RuntimeError('Incorrectly formatted configuration/config_variables.json file.')
+        raise RuntimeError('Incorrectly formatted configuration/context_variables.json file.')
 
     for context_var in context_vars:
         if context_var not in variables.keys():
-            raise RuntimeError('Incorrectly formatted configuration/config_variables.json file.')
+            raise RuntimeError('Incorrectly formatted configuration/context_variables.json file.')
 
     return variables
 
@@ -148,7 +148,7 @@ def update_context_variables(variables: dict):
     :param variables: the content of the 'context' entry in the data dictionary
     :type variables: dict
     """
-    with open('configuration/config_variables.json', 'w') as json_file:
+    with open('configuration/context_variables.json', 'w') as json_file:
         json.dump(variables, json_file, indent=4)
 
     with open('cdk.json') as json_file:
@@ -305,7 +305,7 @@ def verify_context_variables(variables: dict, context_variables: list, non_empty
 
         if approval == 'n':
             if param_name in config_values:
-                print('Add values or edit/delete existing values in the configuration/config_variables.json file and' +
+                print('Add values or edit/delete existing values in the configuration/context_variables.json file and' +
                       'run this launch script again. Your progress will not be saved.')
                 sys.exit()
             print('Please specify a new value for',
