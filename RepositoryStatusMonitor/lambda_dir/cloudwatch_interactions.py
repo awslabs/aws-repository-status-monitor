@@ -12,10 +12,15 @@ cloudwatch = boto3.client('cloudwatch')
 def create_or_update_dashboard(dashboard_widget_mapping: dict):
     """Creates or updates the specified dashboard with the specified widgets
 
+    cloudwatch.put_dashboard() replaces the entire contents of a dashboard with the new data, so we need to copy existing
+    widgets into our new list of widgets
+
     :param dashboard_widget_mapping: a mapping of the dashboard name to the widgets to create/update that dashboard with
     :type dashboard_widget_mapping: dict
     """
     for dashboard_name, widgets_to_put in dashboard_widget_mapping.items():
+        final_widgets = []
+        # Get the existing widgets from a dashboard
         existing_dashboards = cloudwatch.list_dashboards(
             DashboardNamePrefix=dashboard_name
         )
@@ -25,28 +30,38 @@ def create_or_update_dashboard(dashboard_widget_mapping: dict):
                 existing_widgets = json.loads(cloudwatch.get_dashboard(DashboardName=dashboard_name)['DashboardBody'])[
                     'widgets']
 
+        # If a new widget matches an existing one, update the existing widget data with the new metrics.
+        # Otherwise, just add the new widget
         for widget in widgets_to_put:
-            match = None
+            match = False
             if widget['type'] == 'metric':
                 for ew in existing_widgets:
                     if ew['type'] != 'text' and widget['properties']['title'] == ew['properties']['title']:
-                        match = ew
+                        match = True
+                        existing_widgets.remove(ew)
+                        ew['properties']['metrics'] = widget['properties']['metrics']
+                        final_widgets.append(ew)
             elif widget['type'] == 'text':
                 title = re.search(r'#\s(.*?)\n', widget['properties']['markdown']).groups()[0]
                 for ew in existing_widgets:
                     if ew['type'] == 'text' and title in ew['properties']['markdown']:
-                        match = ew
-            if match:
-                existing_widgets.remove(match)
+                        match = True
+                        existing_widgets.remove(ew)
+                        ew['properties']['markdown'] = widget['properties']['markdown']
+                        final_widgets.append(ew)
 
-        widgets_to_put.extend(existing_widgets)
+            if not match:
+                final_widgets.append(widget)
+
+        # Add any existing widgets that didn't have new data
+        final_widgets.extend(existing_widgets)
 
         try:
             print("Populating dashboard " + dashboard_name + " with the following widgets")
-            print(widgets_to_put)
+            print(final_widgets)
             cloudwatch.put_dashboard(
                 DashboardName=dashboard_name,
-                DashboardBody=json.dumps({'widgets': widgets_to_put})
+                DashboardBody=json.dumps({'widgets': final_widgets})
             )
         except cloudwatch.exceptions.DashboardInvalidInputError:
             print("Failed to create dashboard. Dashboard input invalid")
