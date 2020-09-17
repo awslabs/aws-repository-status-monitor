@@ -145,7 +145,7 @@ def handle_releases(payload: dict, dashboard_name_prefix: str) -> dict:
             last_release = http_data[1]
 
             time_format = '%Y-%m-%dT%H:%M:%SZ'
-            time_end = datetime.datetime.strptime(payload['published_at'], time_format)
+            time_end = datetime.datetime.strptime(payload['release']['published_at'], time_format)
             time_start = datetime.datetime.strptime(last_release['published_at'], time_format)
             elapsed_time = time_end - time_start
 

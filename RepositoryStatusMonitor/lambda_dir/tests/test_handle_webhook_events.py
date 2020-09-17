@@ -147,7 +147,7 @@ def test_handle_webhook_push(mock_push, mock_release, mock_pr, mock_issue, monke
     mock_release.assert_not_called()
     mock_pr.assert_not_called()
     mock_issue.assert_not_called()
-    mock_push.assert_called_once_with(payload, 'test-dashboard-name-prefix')
+    mock_push.assert_called_once_with(payload)
     assert handle_webhook_return == {'test-push': 'test'}
 
 

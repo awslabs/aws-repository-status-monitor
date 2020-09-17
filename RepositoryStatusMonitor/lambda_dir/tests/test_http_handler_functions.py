@@ -25,8 +25,8 @@ def test_request_handler_bad_github_request_no_message(mock_get, capfd):
     mock_get.return_value.status = 403
     mock_get.return_value.data = 'Request not put through.'.encode()
     success, data, res_headers = hh.request_handler(url='test-url', headers={})
-    assert success
-    assert 'Request failed:  Request not put through.' in capfd.readouterr()[0]
+    assert not success
+    assert 'Request not put through' in capfd.readouterr()[0]
 
 
 @patch('lambda_dir.http_handler.request_handler')

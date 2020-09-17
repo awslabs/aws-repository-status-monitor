@@ -6,10 +6,29 @@ from unittest.mock import Mock, patch
 
 from repository_status_monitor_stack import RepositoryStatusMonitorStack
 
+
+def get_mock_data():
+    return [
+        {
+            'name': 'aws-node-termination-handler',
+            'owner': {
+                'login': 'aws'
+            },
+            'full_name': 'aws/aws-node-termination-handler'
+        },
+        {
+            'name': 'amazon-ec2-metadata-mock',
+            'owner': {
+                'login': 'aws'
+            },
+            'full_name': 'aws/amazon-ec2-metadata-mock'
+        }
+    ]
+
 def set_context(github: str) -> dict:
     return {
         'repo_names': 'aws-node-termination-handler',
-        'dashboard_name_prefix': 'test-dash', 
+        'dashboard_name_prefix': 'test-dash',
         'get_docker': 'y',
         'github_token': github,
         'github_fields_unpaginated': 'Stars,stargazers_count;Forks,forks_count;Open Issues,open_issues_count;Watchers,subscribers_count',
@@ -22,24 +41,15 @@ def set_context(github: str) -> dict:
         'default_text_widget_name': 'default_text_widget_name'
     }
 
+
 @patch('lambda_dir.http_handler.request_handler')
-def test_with_good_context(mock_get, capfd, github):
-    data = [
-        {   
-            'name': 'aws-node-termination-handler', 
-            'owner': {
-                'login': 'aws' 
-            }
-        }
-    ]
+def test_with_good_context(mock_get, github):
+    data = get_mock_data()
     mock_get.return_value = True, data, {}
     context = set_context(github)
     app = core.App(context=context)
-    stack = RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
-    out, err = capfd.readouterr()
-    assert 'Valid repositories: aws-node-termination-handler' in out
-    assert 'Invalid repositories: none' in out
-    
+    RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
+
 
 def test_missing_github_token():
     with pytest.raises(ValueError, match='Need to specify GitHub token.'):
@@ -47,6 +57,7 @@ def test_missing_github_token():
         context.pop('github_token')
         app = core.App(context=context)
         RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
+
 
 def test_empty_github_token():
     with pytest.raises(ValueError, match='Need to specify GitHub token.'):
@@ -156,16 +167,9 @@ def test_bad_github_credentials(mock_get):
 @patch('lambda_dir.http_handler.request_handler')
 def test_invalid_repo_names(mock_get, github):
     with pytest.raises(RuntimeError, match='All repository names must be valid.'):
-        data = [
-            {   
-                'name': 'aws-node-termination-handler', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            }
-        ]
+        data = get_mock_data()
         mock_get.return_value = True, data, {}
-        
+
         context = set_context(github)
         context['repo_names'] = 'aws-node-termination-handler,hello'
         app = core.App(context=context)
@@ -174,80 +178,41 @@ def test_invalid_repo_names(mock_get, github):
 
 @patch('lambda_dir.http_handler.request_handler')
 def test_no_valid_repo_names(mock_get, github):
-     with pytest.raises(RuntimeError, match='All repository names must be valid.'):
-        data = [
-            {   
-                'name': 'aws-node-termination-handler', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            }
-        ]
+    with pytest.raises(RuntimeError, match='All repository names must be valid.'):
+        data = get_mock_data()
         mock_get.return_value = True, data, {}
         context = set_context(github)
         context['repo_names'] = 'hello,goodbye'
         app = core.App(context=context)
         RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
 
-    
+
 @patch('lambda_dir.http_handler.request_handler')
 def test_invalid_repo_names_format(mock_get, github):
     with pytest.raises(RuntimeError, match='All repository names must be valid.'):
-        data = [
-            {   
-                'name': 'aws-node-termination-handler', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            },
-            {   
-                'name': 'amazon-ec2-metadata-mock', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            }
-        ]
+        data = get_mock_data()
         mock_get.return_value = True, data, {}
         context = set_context(github)
         context['repo_names'] = 'aws-node-termination-handler;amazon-ec2-metadata-mock'
         app = core.App(context=context)
         RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
-    
+
 
 @patch('lambda_dir.http_handler.request_handler')
 def test_no_owner_specified(mock_get, github):
     with pytest.raises(RuntimeError, match='All repository names must be valid.'):
-        data = [
-            {   
-                'name': 'aws-node-termination-handler', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            },
-            {   
-                'name': 'amazon-ec2-metadata-mock', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            }
-        ]
+        data = get_mock_data()
         mock_get.return_value = True, data, {}
         context = set_context(github)
         context['owner'] = ''
         app = core.App(context=context)
         RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
 
+
 @patch('lambda_dir.http_handler.request_handler')
 def test_individual_owner_not_specified_and_general_owner_wrong(mock_get, github):
     with pytest.raises(RuntimeError, match='All repository names must be valid.'):
-        data = [
-            {   
-                'name': 'aws-node-termination-handler', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            }
-        ]
+        data = get_mock_data()
         mock_get.return_value = True, data, {}
         context = set_context(github)
         context['owner'] = 'amazon'
@@ -256,19 +221,21 @@ def test_individual_owner_not_specified_and_general_owner_wrong(mock_get, github
 
 
 @patch('lambda_dir.http_handler.request_handler')
-def test_individual_owner_takes_precedence_over_general_owner(mock_get, capfd, github):
+def test_individual_owner_takes_precedence_over_general_owner(mock_get, github):
     data = [
         {   
             'name': 'aws-node-termination-handler', 
             'owner': {
                 'login': 'aws' 
-            }
+            },
+            'full_name': 'aws/aws-node-termination-handler'
         },
         {   
             'name': 'amazon-ec2-metadata-mock', 
             'owner': {
                 'login': 'amazon' 
-            }
+            },
+            'full_name': 'amazon/amazon-ec2-metadata-mock'
         }
     ]
     mock_get.return_value = True, data, {}
@@ -277,54 +244,23 @@ def test_individual_owner_takes_precedence_over_general_owner(mock_get, capfd, g
     context['repo_names'] = 'aws/aws-node-termination-handler,amazon-ec2-metadata-mock'
     app = core.App(context=context)
     RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
-    out, err = capfd.readouterr()
-    assert 'Valid repositories: aws/aws-node-termination-handler, amazon-ec2-metadata-mock' in out
-    assert 'Invalid repositories: none' in out
+
 
 @patch('lambda_dir.http_handler.request_handler')
-def test_all_individual_owners_specified(mock_get, capfd, github):
-    data = [
-        {   
-            'name': 'aws-node-termination-handler', 
-            'owner': {
-                'login': 'aws' 
-            }
-        },
-        {   
-            'name': 'amazon-ec2-metadata-mock', 
-            'owner': {
-                'login': 'aws' 
-            }
-        }
-    ]
+def test_all_individual_owners_specified(mock_get, github):
+    data = get_mock_data()
     mock_get.return_value = True, data, {}
     context = set_context(github)
     context['owner'] = ''
     context['repo_names'] = 'aws/aws-node-termination-handler,aws/amazon-ec2-metadata-mock'
     app = core.App(context=context)
     RepositoryStatusMonitorStack(app, 'RepositoryStatusMonitor')
-    out, err = capfd.readouterr()
-    assert 'Valid repositories: aws/aws-node-termination-handler, aws/amazon-ec2-metadata-mock' in out
-    assert 'Invalid repositories: none' in out
 
 
 @patch('lambda_dir.http_handler.request_handler')
 def test_all_individual_owners_specified_but_some_wrong(mock_get, github):
     with pytest.raises(RuntimeError, match='All repository names must be valid.'):
-        data = [
-            {   
-                'name': 'aws-node-termination-handler', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            },
-            {   
-                'name': 'amazon-ec2-metadata-mock', 
-                'owner': {
-                    'login': 'aws' 
-                }
-            }
-        ]
+        data = get_mock_data()
         mock_get.return_value = True, data, {}
         context = set_context(github)
         context['owner'] = ''

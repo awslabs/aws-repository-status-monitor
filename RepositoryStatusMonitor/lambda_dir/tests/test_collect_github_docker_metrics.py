@@ -227,7 +227,7 @@ def test_verify_and_retrieve_metric_data_no_data_for_url(capfd):
 
 def test_process_fields_no_slash_param_specified(monkeypatch):
     mock_name = 'test-name'
-    monkeypatch.setenv(mock_name, 'test-field,test;test-field-2,test-2')
+    monkeypatch.setenv(mock_name, '{"test-field":"test","test-field-2":"test-2"}')
 
     fields, param_name_mapping = github_docker.process_fields(mock_name)
     assert fields == {'None': {'test-field': 'test', 'test-field-2': 'test-2'}}
@@ -236,7 +236,7 @@ def test_process_fields_no_slash_param_specified(monkeypatch):
 
 def test_process_fields_with_slash_param_specified(monkeypatch):
     mock_name = 'test-name'
-    monkeypatch.setenv(mock_name, 'test-field,test/1')
+    monkeypatch.setenv(mock_name, '{"test-field":"test/1"}')
 
     fields, param_name_mapping = github_docker.process_fields(mock_name)
     assert fields == {'test': {'test-field': '1'}}
@@ -245,7 +245,7 @@ def test_process_fields_with_slash_param_specified(monkeypatch):
 
 def test_process_fields_with_slash_param_not_specified(monkeypatch):
     mock_name = 'test-name'
-    monkeypatch.setenv(mock_name, 'test-field,test/')
+    monkeypatch.setenv(mock_name, '{"test-field":"test/"}')
 
     fields, param_name_mapping = github_docker.process_fields(mock_name)
     assert fields == {'test': {'test-field': 'no-param test'}}

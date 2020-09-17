@@ -560,40 +560,6 @@ def test_create_or_update_dashboard_good_input_overwrite_same_widget(monkeypatch
     assert len(updated_widgets) == 1
 
 
-def test_create_or_update_dashboard_invalid_widgets_to_put(monkeypatch, capfd, aws_credentials):
-    cloudwatch = botocore.session.get_session().create_client('cloudwatch')
-    stubber = Stubber(cloudwatch)
-    stubber.add_response('list_dashboards', {'DashboardEntries': []})
-    stubber.add_response('get_dashboard', {'DashboardBody': json.dumps({'widgets': []})})
-    stubber.add_response('put_dashboard', {})
-    stubber.activate()
-
-    dashboard_name = 'dash-name'
-    monkeypatch.setenv("dashboard_name", dashboard_name)
-
-    dashboard_widget_mapping = {
-        dashboard_name: [
-            {
-                'type': 'metric',
-                'width': 6,
-                'height': 6,
-                'properties': {
-                    'metrics': {},
-                    'view': 'singleValue',
-                    'period': 3600,
-                    'stat': 'Maximum',
-                    'region': os.environ['AWS_REGION'],
-                    'title': dashboard_name + ' Repository Status'
-                }
-            }
-        ]
-    }
-
-    cw.create_or_update_dashboard(dashboard_widget_mapping)
-    out, err = capfd.readouterr()
-    assert 'Dashboard input invalid. Could not create dashboard.' in out
-
-
 @patch('lambda_dir.cloudwatch_interactions.cloudwatch.get_metric_data')
 @patch('lambda_dir.cloudwatch_interactions.put_metrics_in_cloudwatch')
 @patch('lambda_dir.cloudwatch_interactions.new_metric')

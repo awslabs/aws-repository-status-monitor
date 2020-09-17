@@ -30,7 +30,7 @@ def request_handler(url: str, method='GET', headers=None, http_fields=None, post
         data_dict = {'message': decoded_data}
 
     if response.status < 200 or response.status >= 300:
-        print('Request for ' + url + "failed. Response data:")
+        print('Request for ' + url + " failed. Response data:")
         print(decoded_data)
         return False, data_dict, response.headers
 
