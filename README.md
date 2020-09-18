@@ -152,6 +152,26 @@ Here is an example of the `configuration/context_variables.json` file:
     }
 }
 ```
+## Running the Tests
+To run the full suite of tests use the following steps:
+```
+# start the virtual env
+$ source .env/bin/activate 
+
+# install pytest
+$ pip install pytest
+
+# run the tests
+$ pytest --github <github token> 
+``` 
+
+To run with code coverage:
+```
+$ pytest --github <github token> --cov
+```
+
+If you get errors about missing modules when running the tests and have pytest installed on your machine try following
+the instructions [here](https://medium.com/@dirk.avery/pytest-modulenotfounderror-no-module-named-requests-a770e6926ac5)
 
 ## Example Dashboard
 
